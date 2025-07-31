@@ -1,28 +1,30 @@
-name: Weekly AI Sidekick
+name: Weekly Studio Summary
 
 on:
   schedule:
     - cron: "0 16 * * 5" # Every Friday at 9am PST (16:00 UTC)
-  workflow_dispatch: # Allow manual run
+  workflow_dispatch: # Allows manual runs too
 
 jobs:
-  generate-weekly-report:
+  generate-summary:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v3
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "18"
+          node-version: 18
 
       - name: Install dependencies
         run: npm install
 
-      - name: Run Report Generator
+      - name: Run summary script
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
+          GITHUB_USERNAME: ${{ secrets.GITHUB_USERNAME }}
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
