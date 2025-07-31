@@ -12,7 +12,7 @@ async function getGitHubActivity() {
     .toISOString()
     .split("T")[0]; // YYYY-MM-DD
 
-  const url = `https://api.github.com/search/issues?q=is:pr+repo:callinofficial/studio-web+author:${process.env.GITHUB_USERNAME}+is:merged+merged:>${sinceDate}`;
+  const url = `https://api.github.com/search/issues?q=is:pr+repo:callinofficial/studio-web+author:${process.env.GH_USERNAME}+is:merged+merged:>${sinceDate}`;
 
   const headers = {
     Authorization: `token ${process.env.GH_PAT}`,

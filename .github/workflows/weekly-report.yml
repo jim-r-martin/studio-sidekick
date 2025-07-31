@@ -24,7 +24,7 @@ jobs:
       - name: Run summary script
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
-          GITHUB_USERNAME: ${{ secrets.GITHUB_USERNAME }}
+          GH_USERNAME: ${{ secrets.GH_USERNAME }}
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
