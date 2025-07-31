@@ -1,17 +1,24 @@
-const { Configuration, OpenAIApi } = require("openai");
+require("dotenv").config();
+const OpenAI = require("openai");
 const axios = require("axios");
 
-const openai = new OpenAIApi(
-  new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
-  })
-);
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 async function getGitHubActivity() {
   // Example: fetch last 7 days of PRs from GitHub
-  const headers = { Authorization: `token ${process.env.GH_PAT}` };
-  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const url = `https://github.com/callinofficial/studio-web/pulls?q=merged:>${since}`;
+  const sinceDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0]; // YYYY-MM-DD
+
+  const url = `https://api.github.com/search/issues?q=is:pr+repo:callinofficial/studio-web+author:${process.env.GITHUB_USERNAME}+is:merged+merged:>${sinceDate}`;
+
+  const headers = {
+    Authorization: `token ${process.env.GH_PAT}`,
+    Accept: "application/vnd.github+json",
+    "User-Agent": "axios",
+  };
 
   const res = await axios.get(url, { headers });
   return res.data.items.map((pr) => `PR: ${pr.title}`);
@@ -38,19 +45,31 @@ async function getJiraActivity() {
 
 async function generateReport(lines) {
   const prompt = `
-Here is a list of work items from GitHub and Jira for the past week:
+You are an AI assistant that summarizes a developer’s weekly accomplishments.
+
+Below is a list of work items from GitHub and Jira for the past week:
 
 ${lines.join("\n")}
 
-Summarize my 3 most important work wins in markdown format. Each item should be a one-sentence bullet point.
+Write a Markdown-formatted list of the 3 most impactful accomplishments.
+
+Each bullet should be a single sentence that is:
+- Clear and concise
+- Easy to understand by non-technical readers
+- Focused on outcomes or impact
+
+**Instructions:**
+- Group similar work items together into one bullet if they share a theme (e.g. multiple updates to a chat feature, or multiple copy tweaks).
+- Prioritize meaningful work over minor changes.
+- If referencing Jira items, use the ticket *titles*, not the ticket numbers.
+- Avoid duplication or overly technical language.
 `;
 
-  const response = await openai.createChatCompletion({
-    model: "gpt-4",
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o",
     messages: [{ role: "user", content: prompt }],
   });
-
-  return response.data.choices[0].message.content;
+  return response.choices[0].message.content;
 }
 
 async function sendToSlack(message) {
@@ -63,6 +82,5 @@ async function sendToSlack(message) {
   const gh = await getGitHubActivity();
   const jira = await getJiraActivity();
   const summary = await generateReport([...gh, ...jira]);
-  console.log(summary);
-  // await sendToSlack(summary);
+  await sendToSlack(summary);
 })();
