@@ -7,12 +7,15 @@ const openai = new OpenAI({
 });
 
 async function getGitHubActivity() {
-  // Example: fetch last 7 days of PRs from GitHub
+  // Fetch last 7 days of PRs and commits from GitHub
   const sinceDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     .toISOString()
     .split("T")[0]; // YYYY-MM-DD
 
-  const url = `https://api.github.com/search/issues?q=is:pr+repo:callinofficial/studio-web+author:${process.env.GH_USERNAME}+is:merged+merged:>${sinceDate}`;
+  // Support multiple repositories from environment variable
+  const repos = process.env.GH_REPOS 
+    ? process.env.GH_REPOS.split(',').map(repo => repo.trim())
+    : ['callinofficial/studio-web']; // Default fallback
 
   const headers = {
     Authorization: `token ${process.env.GH_PAT}`,
@@ -20,8 +23,29 @@ async function getGitHubActivity() {
     "User-Agent": "axios",
   };
 
-  const res = await axios.get(url, { headers });
-  return res.data.items.map((pr) => `PR: ${pr.title}`);
+  const activities = [];
+
+  // Fetch PRs
+  const repoQuery = repos.map(repo => `repo:${repo}`).join('+');
+  const prUrl = `https://api.github.com/search/issues?q=is:pr+${repoQuery}+author:${process.env.GH_USERNAME}+is:merged+merged:>${sinceDate}`;
+  
+  const prRes = await axios.get(prUrl, { headers });
+  activities.push(...prRes.data.items.map((pr) => `PR: ${pr.title}`));
+
+  // Fetch commits for each repository
+  for (const repo of repos) {
+    const commitsUrl = `https://api.github.com/repos/${repo}/commits?author=${process.env.GH_USERNAME}&since=${sinceDate}T00:00:00Z`;
+    
+    try {
+      const commitsRes = await axios.get(commitsUrl, { headers });
+      activities.push(...commitsRes.data.map((commit) => `Commit: ${commit.commit.message.split('\n')[0]}`));
+    } catch (error) {
+      // Skip repos that might not be accessible or don't exist
+      console.warn(`Could not fetch commits for ${repo}: ${error.message}`);
+    }
+  }
+
+  return activities;
 }
 
 async function getJiraActivity() {
