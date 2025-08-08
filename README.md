@@ -146,6 +146,8 @@ Ensure your Jira user has permission to:
 
 ### Testing
 
+#### Local Testing
+
 Test individual components:
 
 ```bash
@@ -153,6 +155,33 @@ Test individual components:
 # Temporarily comment out the sendToSlack call in report-generator.js
 node report-generator.js
 ```
+
+#### GitHub Actions Testing
+
+To test the GitHub Action without waiting for the Friday cron schedule:
+
+1. **Manual Trigger via GitHub UI**:
+   - Go to your repository on GitHub
+   - Navigate to the "Actions" tab
+   - Select "Weekly Report Generator" workflow
+   - Click "Run workflow" button (only available because we included `workflow_dispatch` in the workflow)
+   - Click the green "Run workflow" button to trigger immediately
+
+2. **Manual Trigger via GitHub CLI**:
+   ```bash
+   # Install GitHub CLI if not already installed
+   gh workflow run "Weekly Report Generator"
+   
+   # Or trigger by filename
+   gh workflow run weekly-report.yml
+   ```
+
+3. **Monitor the Action**:
+   - Check the "Actions" tab to see the workflow run
+   - Click on the run to view logs and debug any issues
+   - Verify the Slack message was sent successfully
+
+The `workflow_dispatch` trigger in the workflow allows manual execution for testing purposes.
 
 ## Contributing
 
